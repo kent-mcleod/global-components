@@ -13,6 +13,19 @@
 
 /*? macros.show_includes(me.instance.type.includes) ?*/
 
+/*- set nodes = set() -*/
+/*- for end in me.parent.from_ends -*/
+    /*- do nodes.add(render_state.label_node_map[end.instance.name]) -*/
+/*- endfor -*/
+
+/*- for end in me.parent.to_ends -*/
+    /*- do nodes.add(render_state.label_node_map[end.instance.name]) -*/
+/*- endfor -*/
+
+/*- set multicore = len(nodes) > 1 -*/
+
+
+
 /*- if me in me.parent.from_ends -*/
   /*- set index = me.parent.from_ends.index(me) -*/
   /*- set end = 'from' -*/
@@ -62,6 +75,18 @@
   /*- set paddr = configuration[me.parent.name].get('paddr') -*/
 /*- else -*/
   /*- set paddr = None -*/
+  /*- if multicore -*/
+    /*- set global_name = '%s_data' % me.parent.name -*/
+    /*- if global_name not in render_state.global_obj_space -*/
+        /*- set paddr = render_state.curser -*/
+        /*- set paddr = macros.ROUND_UP(paddr, page_size) -*/
+        /*- do render_state.__setattr__('curser', paddr + dataport_size) -*/
+        /*- do render_state.global_obj_space.__setitem__(global_name, paddr) -*/
+    /*- else -*/
+        /*- set paddr = render_state.global_obj_space[global_name] -*/
+    /*- endif -*/
+
+  /*- endif -*/
 /*- endif -*/
 
 /*- set perm = macros.get_perm(configuration, me.instance.name, me.interface.name) -*/
