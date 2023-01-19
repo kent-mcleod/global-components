@@ -5,7 +5,7 @@
   #*/
 
 
-/*- macro allocate_cap(interface_end, is_reader) -*/
+/*- macro allocate_cap(interface_end, is_reader, multicore=False) -*/
   /*? assert(isinstance(is_reader, bool)) ?*/
 
   /*- set instance = interface_end.instance -*/
@@ -30,6 +30,60 @@
   /*- set badge = macros.global_endpoint_badges(composition, interface_end, configuration, options.architecture) -*/
   /*- set stash_name = "%s_global_notification" % (name) -*/
 
+  /*- if multicore and not is_reader -*/
+    /*- set global_name = '%s_%d_sgi' % (stash_name, badge) -*/
+    /*- set node_name = render_state.label_node_map[instance.name] -*/
+    /*- set node_id = configuration[node_name]["node_id"] -*/
+    /*- set sgi = 32 -*/
+    /*- if global_name not in render_state.global_obj_space -*/
+        /*- set sgi = render_state.nodes[node_name].sgi_count -*/
+        /*- do render_state.nodes[node_name].__setattr__('sgi_count', sgi + 1) -*/
+        /*- do render_state.global_obj_space.__setitem__(global_name, sgi) -*/
+    /*- else -*/
+        /*- set sgi = render_state.global_obj_space[global_name] -*/
+    /*- endif -*/
+
+    /*- do print(sgi) -*/
+    /*- set notification = alloc(name, seL4_ARM_SGI_Signal, irqs=2**sgi, targets=2**node_id) -*/
+    /*- do stash('notification', (notification, sgi, node_id)) -*/
+
+  /*- elif multicore and is_reader -*/
+    /*- set global_name = '%s_%d_sgi' % (stash_name, badge) -*/
+    /*- set node_name = render_state.label_node_map[instance.name] -*/
+    /*- set node_id = configuration[node_name]["node_id"] -*/
+    /*- set sgi = 32 -*/
+    /*- if global_name not in render_state.global_obj_space -*/
+        /*- set sgi = render_state.nodes[node_name].sgi_count -*/
+        /*- do render_state.nodes[node_name].__setattr__('sgi_count', sgi + 1) -*/
+        /*- do render_state.global_obj_space.__setitem__(global_name, sgi) -*/
+    /*- else -*/
+        /*- set sgi = render_state.global_obj_space[global_name] -*/
+    /*- endif -*/
+
+    /*- do print(name) -*/
+    /*# Check the global stash for our endpoint #*/
+    /*- set maybe_notification = _pop(stash_name) -*/
+
+    /*# Create the endpoint if we need to #*/
+    /*- if maybe_notification is none -*/
+            /*- set notification_owner = instance.name -*/
+            /*- set notification_object = alloc_obj(name, seL4_NotificationObject, label=notification_owner) -*/
+    /*- else -*/
+        /*- set notification_object, notification_owner = maybe_notification -*/
+    /*- endif -*/
+
+    /*# Put it back into the stash #*/
+    /*- do _stash(stash_name, (notification_object, notification_owner)) -*/
+
+    /*- set ntfn = alloc_cap(name, notification_object, read=True) -*/
+    /*- do cap_space.cnode[ntfn].set_badge(badge) -*/
+
+    /*- set irq = alloc('irq', seL4_IRQHandler, number=sgi, notification=my_cnode[ntfn]) -*/
+    /*- do stash('notification', (ntfn, irq)) -*/
+    /*- do stash('badge', badge) -*/
+
+  /*- else -*/
+
   /*# Check the global stash for our endpoint #*/
   /*- set maybe_notification = _pop(stash_name) -*/
 
@@ -51,6 +105,7 @@
   /*- endif -*/
   /*- do stash('notification', notification) -*/
   /*- do stash('badge', badge) -*/
+/*- endif -*/
 /*- endmacro -*/
 
 /*- macro allocate_cap_instance(instance) -*/
